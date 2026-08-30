@@ -214,8 +214,8 @@ var dishesData = store.dishes;
 /* ===== 云端同步（Supabase）=====
    部署后两人共享同一套菜谱：把下面两行换成你的 Supabase 项目配置即可。
    留空则退回纯本地模式（各自浏览器存储，互不同步）。 */
-var SUPABASE_URL = "";       // 粘贴 Project URL，例如 https://xxxx.supabase.co
-var SUPABASE_ANON_KEY = "";  // 粘贴 anon public key
+var SUPABASE_URL = "https://ftwnngottobaenrdyztd.supabase.co";
+var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0d25uZ290dG9iYWVucmR5enRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMDIyMDIsImV4cCI6MjEwMzY3ODIwMn0.hEnTagNhJ9DL7b_9VO6fSpyz2UGC-pTKXmGzEn-UaDE";
 var supabaseClient = null;
 var SHARED_ROW_ID = 1;
 

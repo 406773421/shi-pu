@@ -228,7 +228,8 @@ function initSync(){
       .then(function(res){
         if(res.data && res.data.data && res.data.data.dishes){
           dishesData = res.data.data.dishes;
-          saveLocal();
+          if(res.data.data.cart) state.cart = res.data.data.cart;
+          saveLocal(); saveCartLocal();
           renderCategories(); renderDishes(); updateCart();
         }else{
           pushRemote();  // 云端为空：把当前数据推上去
@@ -237,10 +238,15 @@ function initSync(){
     supabaseClient.channel("menu-sync")
       .on("postgres_changes", {event:"*", schema:"public", table:"shared_menu"}, function(payload){
         var remote = payload && payload.new && payload.new.data;
-        if(remote && remote.dishes && JSON.stringify(remote.dishes) !== JSON.stringify(dishesData)){
-          dishesData = remote.dishes;
-          saveLocal();
-          renderCategories(); renderDishes(); updateCart();
+        if(remote && remote.dishes){
+          var sameDishes = JSON.stringify(remote.dishes) === JSON.stringify(dishesData);
+          var sameCart = JSON.stringify(remote.cart || {}) === JSON.stringify(state.cart);
+          if(!sameDishes || !sameCart){
+            dishesData = remote.dishes;
+            state.cart = remote.cart || {};
+            saveLocal(); saveCartLocal();
+            renderCategories(); renderDishes(); updateCart();
+          }
         }
       })
       .subscribe();
@@ -253,7 +259,7 @@ function saveLocal(){
 
 function pushRemote(){
   if(!supabaseClient) return;
-  supabaseClient.from("shared_menu").upsert({id: SHARED_ROW_ID, data: {dishes: dishesData}, updated_at: new Date().toISOString()}).then(function(){});
+  supabaseClient.from("shared_menu").upsert({id: SHARED_ROW_ID, data: {dishes: dishesData, cart: state.cart}, updated_at: new Date().toISOString()}).then(function(){});
 }
 
 function saveData(){
@@ -261,7 +267,14 @@ function saveData(){
   pushRemote();
 }
 
-var state = {view:"menu", currentCategory:categories[0].id, cart:{}, searchQuery:"", modalDishId:null, managing:false, collapsed:{}};
+var CART_KEY = "dishAppCartV1";
+var savedCart = {};
+try{ savedCart = JSON.parse(localStorage.getItem(CART_KEY) || "{}"); }catch(e){}
+var state = {view:"menu", currentCategory:categories[0].id, cart:savedCart, searchQuery:"", modalDishId:null, managing:false, collapsed:{}};
+
+function saveCartLocal(){
+  try{ localStorage.setItem(CART_KEY, JSON.stringify(state.cart)); }catch(e){}
+}
 var sidebarEl = document.getElementById("sidebar");
 var menuEl = document.getElementById("menu");
 var searchInput = document.getElementById("searchInput");
@@ -292,6 +305,7 @@ function switchCat(id){
 }
 
 function renderDishes(){
+  if(state.searchQuery.trim()){ renderSearchResults(); return; }
   var cat = null;
   for(var i=0;i<categories.length;i++){
     if(categories[i].id===state.currentCategory){ cat=categories[i]; break; }
@@ -299,14 +313,6 @@ function renderDishes(){
   if(state.currentCategory==="bypreg"){ renderByPreg(); return; }
   if(state.currentCategory==="guide"){ renderGuide(); return; }
   var dishes = dishesData[state.currentCategory] || [];
-  if(state.searchQuery.trim()){
-    var q = state.searchQuery.toLowerCase();
-    var filtered = [];
-    for(var i=0;i<dishes.length;i++){
-      if(dishes[i].name.toLowerCase().indexOf(q)!==-1){ filtered.push(dishes[i]); }
-    }
-    dishes = filtered;
-  }
   dishes = dishes.slice().sort(function(a,b){
     var pa = (a.preg===undefined||a.preg===null) ? -1 : a.preg;
     var pb = (b.preg===undefined||b.preg===null) ? -1 : b.preg;
@@ -335,6 +341,48 @@ function renderDishes(){
     dishesHtml += '<div class="dish" onclick="openDetail(\''+dish.id+'\')"><div class="dish-img" style="background:'+dish.bg+'"><span style="font-size:32px">'+dish.icon+'</span></div><div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+pregBadge(dish)+subHtml+'</div><div class="dish-actions">'+actionHtml+'</div></div>';
   }
   menuEl.innerHTML = titleHtml + dishesHtml;
+}
+
+function dishRowHtml(dish, subHtml){
+  var qty = state.cart[dish.id] || 0;
+  var actionHtml = "";
+  if(state.managing){
+    actionHtml = '<button class="del-btn" onclick="event.stopPropagation();deleteDish(\''+dish.id+'\')" title="删除">🗑</button>';
+  }else{
+    var qtyHtml = "";
+    if(qty>0){
+      qtyHtml = '<button class="qty-btn" onclick="event.stopPropagation();updateQty(\''+dish.id+'\',-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><span class="qty">'+qty+'</span>';
+    }
+    actionHtml = qtyHtml + '<button class="qty-btn add" onclick="event.stopPropagation();updateQty(\''+dish.id+'\',1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
+  }
+  return '<div class="dish" onclick="openDetail(\''+dish.id+'\')"><div class="dish-img" style="background:'+dish.bg+'"><span style="font-size:32px">'+dish.icon+'</span></div><div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+pregBadge(dish)+subHtml+'</div><div class="dish-actions">'+actionHtml+'</div></div>';
+}
+
+function renderSearchResults(){
+  var q = state.searchQuery.toLowerCase();
+  var filtered = [];
+  for(var cat in dishesData){
+    var arr = dishesData[cat];
+    for(var i=0;i<arr.length;i++){
+      if(arr[i].name.toLowerCase().indexOf(q)!==-1){ filtered.push(arr[i]); }
+    }
+  }
+  filtered.sort(function(a,b){
+    var pa = (a.preg===undefined||a.preg===null) ? -1 : a.preg;
+    var pb = (b.preg===undefined||b.preg===null) ? -1 : b.preg;
+    return pb - pa;
+  });
+  if(!filtered.length){
+    menuEl.innerHTML = '<div class="empty-state">没有找到相关菜品</div>';
+    return;
+  }
+  var html = '<div class="cat-title">搜索结果 <span style="color:#999;font-weight:400">('+filtered.length+')</span></div>';
+  for(var i=0;i<filtered.length;i++){
+    var dish = filtered[i];
+    var subHtml = dish.ingredients ? '<div class="dish-sub">'+dish.ingredients+'</div>' : '';
+    html += dishRowHtml(dish, subHtml);
+  }
+  menuEl.innerHTML = html;
 }
 
 function updateQty(dishId, delta){
@@ -390,6 +438,8 @@ function updateCart(){
     cartTabBadge.style.display = "none";
   }
   if(state.view==="cart") renderCart();
+  saveCartLocal();
+  pushRemote();
 }
 
 function renderCart(){

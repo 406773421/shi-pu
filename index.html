@@ -27,7 +27,7 @@
   .menu{flex:1;padding:0 16px 16px;min-width:0}
   .cat-title{font-size:16px;font-weight:500;padding:12px 0 8px;display:flex;align-items:center;gap:4px;position:sticky;top:0;background:#fff;z-index:2}
   .dish{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #eee;align-items:center;cursor:pointer}
-  .dish-img{width:76px;height:76px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f0f0f0}
+  .dish-img{width:76px;height:76px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f0f0f0;position:relative}
   .dish-info{flex:1;min-width:0;pointer-events:none}
   .dish-name{font-size:15px;font-weight:500;margin-bottom:6px}
   .dish-sub{font-size:12px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -66,7 +66,7 @@
   .modal-title{font-size:18px;font-weight:600}
   .modal-close{width:32px;height:32px;border-radius:50%;border:none;background:#f5f5f5;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}
   .modal-body{padding:0 20px 20px}
-  .modal-img{width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:80px;border-radius:12px;margin:16px 0}
+  .modal-img{width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:80px;border-radius:12px;margin:16px 0;position:relative;overflow:hidden}.modal-img img,.dish-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .modal-section{margin-bottom:20px}
   .modal-section-title{font-size:15px;font-weight:600;margin-bottom:10px;color:#333}
   .modal-ingredients{font-size:14px;line-height:1.6;color:#555;background:#f8f8f8;padding:12px 16px;border-radius:10px}
@@ -373,11 +373,14 @@ function renderDishes(){
       }
       actionHtml = qtyHtml + '<button class="qty-btn add" onclick="event.stopPropagation();updateQty(\''+dish.id+'\',1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
     }
-    dishesHtml += '<div class="dish" onclick="openDetail(\''+dish.id+'\')"><div class="dish-img" style="background:'+dish.bg+'"><span style="font-size:32px">'+dish.icon+'</span></div><div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+pregBadge(dish)+subHtml+'</div><div class="dish-actions">'+actionHtml+'</div></div>';
+    dishesHtml += '<div class="dish" onclick="openDetail(\''+dish.id+'\')">'+dishImgHtml(dish)+'<div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+pregBadge(dish)+subHtml+'</div><div class="dish-actions">'+actionHtml+'</div></div>';
   }
   menuEl.innerHTML = titleHtml + dishesHtml;
 }
 
+function dishImgHtml(dish){
+  return '<div class="dish-img" style="background:'+dish.bg+'"><span style="font-size:32px">'+dish.icon+'</span><img src="img/'+dish.id+'.jpg" alt="" loading="lazy" onerror="this.remove()"></div>';
+}
 function dishRowHtml(dish, subHtml){
   var qty = state.cart[dish.id] || 0;
   var actionHtml = "";
@@ -390,7 +393,7 @@ function dishRowHtml(dish, subHtml){
     }
     actionHtml = qtyHtml + '<button class="qty-btn add" onclick="event.stopPropagation();updateQty(\''+dish.id+'\',1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
   }
-  return '<div class="dish" onclick="openDetail(\''+dish.id+'\')"><div class="dish-img" style="background:'+dish.bg+'"><span style="font-size:32px">'+dish.icon+'</span></div><div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+pregBadge(dish)+subHtml+'</div><div class="dish-actions">'+actionHtml+'</div></div>';
+  return '<div class="dish" onclick="openDetail(\''+dish.id+'\')">'+dishImgHtml(dish)+'<div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+pregBadge(dish)+subHtml+'</div><div class="dish-actions">'+actionHtml+'</div></div>';
 }
 
 function renderCustom(){
@@ -461,7 +464,7 @@ function openDetail(dishId){
   for(var i=0;i<dish.steps.length;i++){
     stepsHtml += '<div class="modal-step"><div class="modal-step-num">'+(i+1)+'</div><div>'+dish.steps[i]+'</div></div>';
   }
-  modalBody.innerHTML = '<div class="modal-img" style="background:'+dish.bg+'"><span style="font-size:80px">'+dish.icon+'</span></div><div style="margin-bottom:8px">'+qtyHtml+'</div>'+pregBadge(dish,true)+(dish.reason?'<div style="font-size:13px;color:#777;line-height:1.6;margin-bottom:14px">'+dish.reason+'</div>':'')+'<div class="modal-section"><div class="modal-section-title">食材</div><div class="modal-ingredients">'+dish.ingredients+'</div></div><div class="modal-section"><div class="modal-section-title">做法步骤</div>'+stepsHtml+'</div>';
+  modalBody.innerHTML = '<div class="modal-img" style="background:'+dish.bg+'"><span style="font-size:80px">'+dish.icon+'</span><img src="img/'+dish.id+'.jpg" alt="" onerror="this.remove()"></div><div style="margin-bottom:8px">'+qtyHtml+'</div>'+pregBadge(dish,true)+(dish.reason?'<div style="font-size:13px;color:#777;line-height:1.6;margin-bottom:14px">'+dish.reason+'</div>':'')+'<div class="modal-section"><div class="modal-section-title">食材</div><div class="modal-ingredients">'+dish.ingredients+'</div></div><div class="modal-section"><div class="modal-section-title">做法步骤</div>'+stepsHtml+'</div>';
   modalOverlay.classList.add("show");
   document.body.style.overflow = "hidden";
 }
@@ -543,7 +546,7 @@ function renderCart(){
     if(!dish) continue;
     var qty = state.cart[ids[i]];
     totalQty += qty;
-    html += '<div class="dish"><div class="dish-img" style="background:'+dish.bg+'"><span style="font-size:32px">'+dish.icon+'</span></div><div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+pregBadge(dish)+'</div><div class="dish-actions"><button class="qty-btn" onclick="event.stopPropagation();updateQty(\''+dish.id+'\',-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><span class="qty">'+qty+'</span><button class="qty-btn add" onclick="event.stopPropagation();updateQty(\''+dish.id+'\',1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="del-btn" onclick="event.stopPropagation();cartRemove(\''+dish.id+'\')" title="删除">🗑</button></div></div>';
+    html += '<div class="dish">'+dishImgHtml(dish)+'<div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+pregBadge(dish)+'</div><div class="dish-actions"><button class="qty-btn" onclick="event.stopPropagation();updateQty(\''+dish.id+'\',-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><span class="qty">'+qty+'</span><button class="qty-btn add" onclick="event.stopPropagation();updateQty(\''+dish.id+'\',1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="del-btn" onclick="event.stopPropagation();cartRemove(\''+dish.id+'\')" title="删除">🗑</button></div></div>';
   }
   html += '<div style="padding:16px 0;display:flex;gap:12px;align-items:center"><div style="flex:1;font-size:14px;color:#666">共 <b>'+totalQty+'</b> 件</div><button class="btn btn-outline" onclick="clearCart()">清空</button><button class="btn btn-primary" style="padding:8px 24px" onclick="placeOrder()">下单</button></div>';
   list.innerHTML = html;
@@ -654,7 +657,7 @@ function renderByPreg(){
         }
         actionHtml = qtyHtml + '<button class="qty-btn add" onclick="event.stopPropagation();updateQty(\''+dish.id+'\',1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
       }
-      html += '<div class="dish" onclick="openDetail(\''+dish.id+'\')"><div class="dish-img" style="background:'+dish.bg+'"><span style="font-size:32px">'+dish.icon+'</span></div><div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+subHtml+'</div><div class="dish-actions">'+actionHtml+'</div></div>';
+      html += '<div class="dish" onclick="openDetail(\''+dish.id+'\')">'+dishImgHtml(dish)+'<div class="dish-info"><div class="dish-name">'+dish.name+'</div>'+subHtml+'</div><div class="dish-actions">'+actionHtml+'</div></div>';
     }
   }
   menuEl.innerHTML = html || '<div class="empty-state">暂无菜品</div>';

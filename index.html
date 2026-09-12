@@ -380,7 +380,7 @@ function renderDishes(){
 }
 
 function dishImgHtml(dish){
-  var p = DISH_PHOTOS[dish.id];
+  var p = (typeof DISH_PHOTOS!=="undefined") ? DISH_PHOTOS[dish.id] : null;
   var imgTag = p ? '<img src="'+p+'" alt="" loading="lazy">' : '<img src="img/'+dish.id+'.jpg" alt="" loading="lazy" onerror="this.remove()">';
   return '<div class="dish-img" style="background:'+dish.bg+'"><span style="font-size:32px">'+dish.icon+'</span>'+imgTag+'</div>';
 }
@@ -467,7 +467,7 @@ function openDetail(dishId){
   for(var i=0;i<dish.steps.length;i++){
     stepsHtml += '<div class="modal-step"><div class="modal-step-num">'+(i+1)+'</div><div>'+dish.steps[i]+'</div></div>';
   }
-  modalBody.innerHTML = '<div class="modal-img" style="background:'+dish.bg+'"><span style="font-size:80px">'+dish.icon+'</span>'+(DISH_PHOTOS[dish.id]?'<img src="'+DISH_PHOTOS[dish.id]+'" alt="">':'<img src="img/'+dish.id+'.jpg" alt="" onerror="this.remove()">')+'</div><div style="margin-bottom:8px">'+qtyHtml+'</div>'+pregBadge(dish,true)+(dish.reason?'<div style="font-size:13px;color:#777;line-height:1.6;margin-bottom:14px">'+dish.reason+'</div>':'')+'<div class="modal-section"><div class="modal-section-title">食材</div><div class="modal-ingredients">'+dish.ingredients+'</div></div><div class="modal-section"><div class="modal-section-title">做法步骤</div>'+stepsHtml+'</div>';
+  modalBody.innerHTML = '<div class="modal-img" style="background:'+dish.bg+'"><span style="font-size:80px">'+dish.icon+'</span>'+((typeof DISH_PHOTOS!=="undefined"&&DISH_PHOTOS[dish.id])?'<img src="'+DISH_PHOTOS[dish.id]+'" alt="">':'<img src="img/'+dish.id+'.jpg" alt="" onerror="this.remove()">')+'</div><div style="margin-bottom:8px">'+qtyHtml+'</div>'+pregBadge(dish,true)+(dish.reason?'<div style="font-size:13px;color:#777;line-height:1.6;margin-bottom:14px">'+dish.reason+'</div>':'')+'<div class="modal-section"><div class="modal-section-title">食材</div><div class="modal-ingredients">'+dish.ingredients+'</div></div><div class="modal-section"><div class="modal-section-title">做法步骤</div>'+stepsHtml+'</div>';
   modalOverlay.classList.add("show");
   document.body.style.overflow = "hidden";
 }
